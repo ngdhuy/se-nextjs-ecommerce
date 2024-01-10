@@ -4,8 +4,11 @@ import Button from "@/app/components/products/Button"
 import ProductImage from "@/app/components/products/ProductImage"
 import SetColor from "@/app/components/products/SetColor"
 import SetQuantity from "@/app/components/products/SetQuantity"
+import { useCart } from "@/hooks/useCart"
 import { Rating } from "@mui/material"
-import React, { useCallback } from "react"
+import { useRouter } from "next/navigation"
+import { useCallback, useEffect, useState } from "react"
+import { MdCheckCircle } from "react-icons/md"
 
 interface ProductDetaiProps {
     product: any
@@ -33,7 +36,10 @@ const Horizontal =() => {
 }
 
 const ProductDetails: React.FC<ProductDetaiProps> = ({ product }) => {
-    const [cartProduct, setCartProduct] = React.useState<CartProductType>({
+    const { handleAddProductToCart, cartProducts } = useCart()
+    const [isProductInCart, setIsProductInCart] = useState(false)
+
+    const [cartProduct, setCartProduct] = useState<CartProductType>({
         id: product.id, 
         name: product.name,
         description: product.description, 
@@ -43,7 +49,20 @@ const ProductDetails: React.FC<ProductDetaiProps> = ({ product }) => {
         qantity: 1, 
         price: product.price,
     })
+
+    const router = useRouter()
     
+    useEffect(() => {
+        setIsProductInCart(false)
+        if(cartProducts){
+            const existingIndex = cartProducts.findIndex((item) => item.id === product.id)
+            console.log(existingIndex)
+            if(existingIndex > -1){
+                setIsProductInCart(true)
+            }
+        }
+    }, [cartProducts])
+
     const productRating = product.reviews.reduce((acc: any, item: any) => item.rating + acc, 0) / product.reviews.length
 
     const handleColorSelect = useCallback((value: SelectedImgType) => {
@@ -53,8 +72,7 @@ const ProductDetails: React.FC<ProductDetaiProps> = ({ product }) => {
                 selectedImg: value
             }
         })
-    }, 
-    [cartProduct.selectedImg])
+    }, [cartProduct.selectedImg])
 
     const handleQtyDecrease = useCallback(() => {
         if (cartProduct.qantity === 1) return
@@ -106,24 +124,53 @@ const ProductDetails: React.FC<ProductDetaiProps> = ({ product }) => {
                     {product.inStock ? "In stock" : "Out of stock"}
                 </div>
                 <Horizontal />
-                <SetColor
-                    cartProduct={cartProduct}
-                    images={product.images}
-                    handColorSelect={handleColorSelect}
-                />
-                <Horizontal />
-                <SetQuantity
-                    cartProduct={cartProduct}
-                    HandleQtyDecrease={handleQtyDecrease}
-                    HandleQtyIncrease={handleQtyIncrease}
-                />
-                <Horizontal />
-                <div className="max-x-[300px]">
-                    <Button 
-                        label="Add to cart"
-                        onClick={() => {}}
-                    />
-                </div>
+                {
+                    isProductInCart ? (
+                        <> 
+                            <p className="
+                                mb-2
+                                text-slate-500
+                                flex
+                                items-center
+                                gap-1
+                            ">
+                                <MdCheckCircle size={20} className="text-teal-400"/>
+                                <span>Product added to cart</span>
+                            </p>
+                            <div>
+                                <Button 
+                                    label="View cart"
+                                    outline
+                                    onClick={() => {
+                                        router.push("/cart")
+                                    }}
+                                />
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <SetColor
+                                cartProduct={cartProduct}
+                                images={product.images}
+                                handColorSelect={handleColorSelect}
+                            />
+                            <Horizontal />
+                            <SetQuantity
+                                cartProduct={cartProduct}
+                                HandleQtyDecrease={handleQtyDecrease}
+                                HandleQtyIncrease={handleQtyIncrease}
+                            />
+                            <Horizontal />
+                            <div className="max-x-[300px]">
+                                <Button 
+                                    label="Add to cart"
+                                    onClick={() => handleAddProductToCart(cartProduct)}
+                                />
+                            </div>
+                        </>
+                    )
+                }
+                
             </div>
         </div>
     )
